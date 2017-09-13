@@ -17,6 +17,7 @@ const BLOCK_TRANSITION_DURATION       = 300 // Milliseconds
 const ACTIVE_BLOCK_CENTERING_DURATION = 200 // Milliseconds
 const DOUBLETAP_TRESHOLD              = 150 // Milliseconds
 const NULL_FN                         = () => {}
+const LOGICAL                         = false // Boolean to change how blocks move
 
 class Block extends Component {
 
@@ -75,6 +76,7 @@ class SortableGrid extends Component {
     this.blockTransitionDuration      = BLOCK_TRANSITION_DURATION
     this.activeBlockCenteringDuration = ACTIVE_BLOCK_CENTERING_DURATION
     this.itemsPerRow                  = ITEMS_PER_ROW
+    this.logical                      = LOGICAL
     this.dragActivationTreshold       = DRAG_ACTIVATION_TRESHOLD
     this.doubleTapTreshold            = DOUBLETAP_TRESHOLD
     this.onDragRelease                = NULL_FN
@@ -152,17 +154,16 @@ class SortableGrid extends Component {
 
       if (dx != 0 || dy != 0) this.initialDragDone = true
 
+
       let yChokeAmount = Math.max(0, (this.activeBlockOffset.y + moveY) - (this.state.gridLayout.height - this.blockWidth))
       let xChokeAmount = Math.max(0, (this.activeBlockOffset.x + moveX) - (this.state.gridLayout.width - this.blockWidth))
       let yMinChokeAmount = Math.min(0, this.activeBlockOffset.y + moveY)
       let xMinChokeAmount = Math.min(0, this.activeBlockOffset.x + moveX)
-
       let dragPosition = { x: moveX - xChokeAmount - xMinChokeAmount, y: moveY - yChokeAmount - yMinChokeAmount }
       this.dragPosition = dragPosition
       let originalPosition = this._getActiveBlock().origin
       let distanceToOrigin = this._getDistanceTo(originalPosition)
       this._getActiveBlock().currentPosition.setValue(dragPosition)
-
       let closest = this.state.activeBlock
       let closestDistance = distanceToOrigin
       this.state.blockPositions.forEach( (block, index) => {
@@ -185,21 +186,60 @@ class SortableGrid extends Component {
         }
       })
       if (this.disabledBlocks.indexOf(closest) === -1 && closest !== this.state.activeBlock) {
-        Animated.timing(
-          this._getBlock(closest).currentPosition,
-          {
-            toValue: this._getActiveBlock().origin,
-            duration: this.blockTransitionDuration
+        if(this.logical) {
+          function _findFromOrder(item, order){
+            if (item.order===order)
+              return item
           }
-        ).start()
-        let blockPositions = this.state.blockPositions
-        this._getActiveBlock().origin = blockPositions[closest].origin
-        blockPositions[closest].origin = originalPosition
-        this.setState({ blockPositions })
+          let activeOrder = this.itemOrder.find((x)=> x.key==this.state.activeBlock).order
+          let newOrder = this.itemOrder.find((x)=> x.key==closest).order
+          let dir = activeOrder - newOrder > 0 ? 1 : -1
+          let orderDiff = (activeOrder - newOrder) * dir
+          let blockPositions = this.state.blockPositions
+          let itemOrder = [...this.itemOrder]
+          let movingBlocks = []
+          for (let i = 0; i<orderDiff; i++){
+            movingBlocks.push(itemOrder.find((item)=>_findFromOrder(item, newOrder+(i*dir))))
+          }
+          movingBlocks.push(itemOrder.find((item)=>_findFromOrder(item, activeOrder)))
+          let tempCurrOrigin = this._getBlock(closest).origin
+          let activesOriginal = this._getBlock(this.state.activeBlock).origin
+          for (let i = 0; i < orderDiff; i++){
+            let curr = movingBlocks[i]
+            let next = movingBlocks[i+1]
+            next ? next.order === activeOrder ? next.order = activeOrder : null : null
+            let tempNextPosition = i === orderDiff - 1 ? activesOriginal : this._getBlock(next.key).origin
+            Animated.timing(
+              this._getBlock(curr.key).currentPosition,
+              {
+                toValue: tempNextPosition,
+                duration: this.blockTransitionDuration
+              }
+            ).start()
+            if(i===0)this._getActiveBlock().origin = this._getBlock(closest).origin
+            blockPositions[curr.key].origin = tempNextPosition
+            this.itemOrder[curr.key].order = next.order
+          }
+          this.itemOrder[this.state.activeBlock].order = newOrder
+          blockPositions[this.state.activeBlock].origin = tempCurrOrigin
+          this.setState({ blockPositions })
+        } else {
+          Animated.timing(
+            this._getBlock(closest).currentPosition,
+            {
+              toValue: this._getActiveBlock().origin,
+              duration: this.blockTransitionDuration
+            }
+          ).start()
+          let blockPositions = this.state.blockPositions
+          this._getActiveBlock().origin = blockPositions[closest].origin
+          blockPositions[closest].origin = originalPosition
+          this.setState({ blockPositions })
 
-        var tempOrderIndex = this.itemOrder[this.state.activeBlock].order
-        this.itemOrder[this.state.activeBlock].order = this.itemOrder[closest].order
-        this.itemOrder[closest].order = tempOrderIndex
+          var tempOrderIndex = this.itemOrder[this.state.activeBlock].order
+          this.itemOrder[this.state.activeBlock].order = this.itemOrder[closest].order
+          this.itemOrder[closest].order = tempOrderIndex
+        }
       }
     }
   }

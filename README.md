@@ -64,6 +64,10 @@ import SortableGrid from 'react-native-sortable-grid'
 
   How many items should be placed on one row
 
+ -  ``` logical ``` **Boolean**
+
+  Decides how blocks are moved. If set to true blocks move logically. First become second, second third etc.
+
  -  ``` dragActivationTreshold ``` **Number**
 
   How long must the user hold the press on the block until it becomes active and can be dragged (milliseconds)
@@ -88,9 +92,9 @@ import SortableGrid from 'react-native-sortable-grid'
  -  ``` dragStartAnimation ``` **Object**
 
   Custom animation to override the default wiggle. Must be an object containing a key ```transform```, which is an array of transformations. Read about [transforms](https://facebook.github.io/react-native/docs/transforms.html) and [animations](https://facebook.github.io/react-native/docs/animated.html) and [see the example](example/customAnimationExample.js#L47) to learn how to use this.
-  
+
  -  ``` disabledBlocks ``` **Array**
-   
+
   List of block indices that cannot be sorted. They cannot be dragged or displaced by dragging another block.
 
 ## SortableGrid methods
@@ -165,7 +169,7 @@ Object {
   <b>Basic item deletion</b><br>toggleDeleteMode() is called during onTap in this example<br><br>
   <img alt="Issue Stats" src="http://i.giphy.com/S4OC2Rt4JXEK4.gif">
   <br><br>
-  
+
   <b>Custom block animation can be passed to the grid<br><br>
   <img alt="Custom animation" src="http://i.giphy.com/FPyiKkqWf1fLW.gif">
   <br><br>
