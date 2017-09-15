@@ -17,7 +17,7 @@ const BLOCK_TRANSITION_DURATION       = 300 // Milliseconds
 const ACTIVE_BLOCK_CENTERING_DURATION = 200 // Milliseconds
 const DOUBLETAP_TRESHOLD              = 150 // Milliseconds
 const NULL_FN                         = () => {}
-const LOGICAL                         = false // Boolean to change how blocks move
+const LOGICAL                         = false
 
 class Block extends Component {
 
@@ -186,7 +186,23 @@ class SortableGrid extends Component {
         }
       })
       if (this.disabledBlocks.indexOf(closest) === -1 && closest !== this.state.activeBlock) {
-        if(this.logical) {
+        if(this.logical===false) {
+          Animated.timing(
+            this._getBlock(closest).currentPosition,
+            {
+              toValue: this._getActiveBlock().origin,
+              duration: this.blockTransitionDuration
+            }
+          ).start()
+          let blockPositions = this.state.blockPositions
+          this._getActiveBlock().origin = blockPositions[closest].origin
+          blockPositions[closest].origin = originalPosition
+          this.setState({ blockPositions })
+
+          var tempOrderIndex = this.itemOrder[this.state.activeBlock].order
+          this.itemOrder[this.state.activeBlock].order = this.itemOrder[closest].order
+          this.itemOrder[closest].order = tempOrderIndex
+        } else {
           function _findFromOrder(item, order){
             if (item.order===order)
               return item
@@ -223,22 +239,6 @@ class SortableGrid extends Component {
           this.itemOrder[this.state.activeBlock].order = newOrder
           blockPositions[this.state.activeBlock].origin = tempCurrOrigin
           this.setState({ blockPositions })
-        } else {
-          Animated.timing(
-            this._getBlock(closest).currentPosition,
-            {
-              toValue: this._getActiveBlock().origin,
-              duration: this.blockTransitionDuration
-            }
-          ).start()
-          let blockPositions = this.state.blockPositions
-          this._getActiveBlock().origin = blockPositions[closest].origin
-          blockPositions[closest].origin = originalPosition
-          this.setState({ blockPositions })
-
-          var tempOrderIndex = this.itemOrder[this.state.activeBlock].order
-          this.itemOrder[this.state.activeBlock].order = this.itemOrder[closest].order
-          this.itemOrder[closest].order = tempOrderIndex
         }
       }
     }
